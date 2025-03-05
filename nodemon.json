@@ -1,0 +1,11 @@
+{
+    "watch": [
+        "src"
+    ],
+    "ext": "ts",
+    "ignore": [
+        "node_modules",
+        "dist"
+    ],
+    "exec": "pnpm ts-node -r tsconfig-paths/register src/server.ts"
+}
