@@ -33,7 +33,7 @@ export default function baseServices(model: Model<any>) {
     },
     create: async (data: any, excludeData: string[] = []) => {
       const filteredData = filterExcludedKeys(data, excludeData);
-      
+
       const document = await model.create(filteredData);
       return document;
     },
@@ -46,6 +46,7 @@ export default function baseServices(model: Model<any>) {
     },
 
     getAll: async (reqQuery: { [key: string]: string }) => {
+      // Only use params for filtering, sorting, etc. Ignore body.
       const apiFeatures = new ApiFeatures(model.find(), reqQuery)
         .filter()
         .search()
@@ -54,7 +55,6 @@ export default function baseServices(model: Model<any>) {
         .limitFields();
       const { mongooseQuery, pagination } = await apiFeatures;
       const data = await mongooseQuery;
-
       return { data, pagination };
     },
   };

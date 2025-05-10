@@ -120,7 +120,14 @@ export default function baseController(
     },
     getAll: {
       handler: expressAsyncHandler(async (req: Request, res: Response) => {
-        const result = await s.getAll(req.body);
+        // Only use req.query (params) for filtering, sorting, etc. Ignore body.
+        const queryParams: { [key: string]: string } = {};
+        Object.entries(req.query).forEach(([key, value]) => {
+          if (typeof value === "string") queryParams[key] = value;
+          else if (Array.isArray(value)) queryParams[key] = value.join(",");
+          else if (value !== undefined) queryParams[key] = String(value);
+        });
+        const result = await s.getAll(queryParams);
         ApiSuccess.send(res, "OK", "documents found", result);
       }),
       validator: [],
