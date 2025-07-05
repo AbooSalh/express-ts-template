@@ -4,7 +4,7 @@ import {
   ApiErrorDetail,
   ApiErrorResponse,
   HttpErrorStatus,
-} from "@/common/types/api";
+} from "../../types/api.types"; // Changed to relative path
 import ApiResponse from "./ApiResponse";
 
 export default class ApiError extends Error {
