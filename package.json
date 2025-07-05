@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "test": "jest"
   },
   "keywords": [],
   "author": "Ahmed Saleh",
@@ -23,15 +24,20 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.14.2",
     "multer": "1.4.5-lts.2",
+    "nodemailer": "^7.0.4",
     "sharp": "^0.34.1",
     "slugify": "^1.6.6",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.13.9",
+    "@types/nodemailer": "^6.4.17",
+    "jest": "^30.0.4",
     "nodemon": "^3.1.9",
+    "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.2"
