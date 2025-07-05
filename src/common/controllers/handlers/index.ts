@@ -8,44 +8,75 @@ import validatorMiddleware from "@/common/middleware/validators/validator";
 import { body, oneOf, param, ValidationChain } from "express-validator";
 import generateValidator from "@/common/utils/validatorsGenerator";
 
+/**
+ * Type definition for a map of validators for specific fields.
+ */
 type ValidatorMap = {
   [field: string]: ValidationChain[];
 };
 
+/**
+ * Custom validator options for create and update operations.
+ */
 type CustomValidatorOptions = {
   create?: ValidatorMap;
   update?: ValidatorMap;
 };
 
+/**
+ * Fields to exclude from create/update operations.
+ * Can be a flat list or split by create/update.
+ */
 type ExcludedData =
   | string[]
   | {
-      create: string[];
-      update: string[];
+      create?: string[];
+      update?: string[];
     };
 
+/**
+ * Options object to configure the base controller.
+ */
+type BaseControllerOptions = {
+  excludedData?: ExcludedData;
+  excludeValidation?: string[];
+  customValidators?: CustomValidatorOptions;
+};
+
+/**
+ * Base controller factory that generates CRUD handlers and validators
+ * for a given Mongoose model.
+ *
+ * @param model - The Mongoose model to operate on
+ * @param options - Optional settings for exclusion and validation
+ * @returns Object with Express-compatible route handlers and validators
+ */
 export default function baseController(
   model: Model<any>,
-  excludedData: ExcludedData = [],
-  excludeValidation: string[] = [],
-  customValidators: CustomValidatorOptions = {}
+  {
+    excludedData = [],
+    excludeValidation = [],
+    customValidators = {},
+  }: BaseControllerOptions = {}
 ) {
-  // Normalize excludedData
+  // Normalize excludedData to always have 'create' and 'update' arrays
   const normalizedExcludedData: { create: string[]; update: string[] } =
     Array.isArray(excludedData)
       ? { create: [...excludedData], update: [...excludedData] }
       : {
-          create: [...excludedData.create],
-          update: [...excludedData.update],
+          create: [...(excludedData.create || [])],
+          update: [...(excludedData.update || [])],
         };
 
-  // Always exclude 'slug' and 'id'
+  // Always exclude 'slug' and 'id' from data and validation
   normalizedExcludedData.create.push("slug", "id");
   normalizedExcludedData.update.push("slug", "id");
   excludeValidation.push("slug", "id");
 
+  // Base service with standard CRUD operations
   const s = baseServices(model);
 
+  // Determine which fields are updatable
   const updatableFields = Object.keys(model.schema.paths).filter(
     (key) =>
       !normalizedExcludedData.update.includes(key) &&
@@ -54,10 +85,15 @@ export default function baseController(
       !key.includes(".")
   );
 
+  // Flatten the validator map into a single array of express-validator chains
   const buildCustomValidators = (map: ValidatorMap) =>
     Object.values(map).flat();
 
+  // Return CRUD controller object
   return {
+    /**
+     * Delete a document by ID
+     */
     deleteOne: {
       handler: expressAsyncHandler(async (req: Request, res: Response) => {
         const { id } = req.params;
@@ -69,6 +105,10 @@ export default function baseController(
         validatorMiddleware,
       ],
     },
+
+    /**
+     * Update a document by ID
+     */
     update: {
       handler: expressAsyncHandler(async (req: Request, res: Response) => {
         const { id } = req.params;
@@ -78,6 +118,7 @@ export default function baseController(
           updatedData,
           normalizedExcludedData.update
         );
+        result.save();
         ApiSuccess.send(res, "OK", "document updated", result);
       }),
       validator: [
@@ -95,6 +136,10 @@ export default function baseController(
         validatorMiddleware,
       ],
     },
+
+    /**
+     * Create a new document
+     */
     create: {
       handler: expressAsyncHandler(async (req: Request, res: Response) => {
         const data = req.body;
@@ -107,10 +152,20 @@ export default function baseController(
         validatorMiddleware,
       ],
     },
+
+    /**
+     * Retrieve a document by ID
+     */
     getOne: {
       handler: expressAsyncHandler(async (req: Request, res: Response) => {
         const { id } = req.params;
-        const result = await s.getOne(id);
+        const queryParams: { [key: string]: string } = {};
+        Object.entries(req.query).forEach(([key, value]) => {
+          if (typeof value === "string") queryParams[key] = value;
+          else if (Array.isArray(value)) queryParams[key] = value.join(",");
+          else if (value !== undefined) queryParams[key] = String(value);
+        });
+        const result = await s.getOne(id, queryParams);
         ApiSuccess.send(res, "OK", "document found", result);
       }),
       validator: [
@@ -118,9 +173,12 @@ export default function baseController(
         validatorMiddleware,
       ],
     },
+
+    /**
+     * Retrieve all documents (with query filters, if provided)
+     */
     getAll: {
       handler: expressAsyncHandler(async (req: Request, res: Response) => {
-        // Only use req.query (params) for filtering, sorting, etc. Ignore body.
         const queryParams: { [key: string]: string } = {};
         Object.entries(req.query).forEach(([key, value]) => {
           if (typeof value === "string") queryParams[key] = value;

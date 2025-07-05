@@ -3,21 +3,34 @@ import { HTTP_STATUS } from "@/common/constants/httpStatus"; // Import status co
 import ApiResponse from "@/common/utils/api/ApiResponse";
 
 class ApiSuccess {
-  public response: ApiResponse;
-  public data: object | null;
+  public readonly statusCode: number;
+  public readonly statusMessage: string;
+  public readonly message: string;
+  public readonly timestamp: string;
+  public readonly status: string;
+  public readonly result: object | null | string;
 
   constructor(
     status: keyof (typeof HTTP_STATUS)["SUCCESS"],
     message: string,
-    data: object | null = null
+    result: object | null | string = null
   ) {
-    this.response = new ApiResponse(HTTP_STATUS.SUCCESS[status], "OK", message);
-    this.data = data;
+    const response = new ApiResponse(
+      HTTP_STATUS.SUCCESS[status],
+      "OK",
+      message
+    );
+    this.statusCode = response.statusCode;
+    this.statusMessage = response.statusMessage;
+    this.message = response.message;
+    this.timestamp = response.timestamp;
+    this.status = response.status;
+    this.result = result;
   }
 
   /** Sends response directly using Express `res` */
   private send(res: Response): void {
-    res.status(this.response.statusCode).json(this);
+    res.status(this.statusCode).json(this);
   }
 
   /** Static method for convenience */
@@ -25,7 +38,7 @@ class ApiSuccess {
     res: Response,
     status: keyof (typeof HTTP_STATUS)["SUCCESS"],
     message: string,
-    data: object | null = null
+    data: object | null | string = null
   ) {
     new ApiSuccess(status, message, data).send(res);
   }

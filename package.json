@@ -14,11 +14,13 @@
   "packageManager": "pnpm@10.5.1",
   "dependencies": {
     "@types/multer": "^1.4.12",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-async-handler": "^1.2.0",
     "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.14.2",
     "multer": "1.4.5-lts.2",
     "sharp": "^0.34.1",
@@ -27,6 +29,7 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.13.9",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",

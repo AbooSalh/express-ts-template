@@ -1,4 +1,4 @@
-import { ApiResponseBase, ApiStatus } from "@/common/types/api.types";
+import { ApiResponseBase, ApiStatus } from "@/common/types/api";
 
 export default class ApiResponse implements ApiResponseBase {
   public readonly statusCode: number;

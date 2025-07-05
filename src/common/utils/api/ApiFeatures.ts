@@ -7,6 +7,7 @@ export interface IRequestBody {
   page?: string;
   limit?: string;
   populate?: string;
+  [key: string]: string | undefined;
 }
 interface IPagination {
   currentPage: number;
@@ -118,7 +119,14 @@ export class ApiFeatures {
   populate() {
     const populateValue = this.queryParams.populate;
     if (populateValue) {
-      this.mongooseQuery = this.mongooseQuery.populate(populateValue);
+      const populateFields = populateValue.split(",");
+      populateFields.forEach((field) => {
+        const select = this.queryParams[`${field}Select`];
+        this.mongooseQuery = this.mongooseQuery.populate({
+          path: field,
+          select: select || undefined,
+        });
+      });
     }
     return this;
   }
