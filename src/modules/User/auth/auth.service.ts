@@ -1,3 +1,15 @@
+import { Request } from "express";
+import UserModel from "../model";
+import ApiError from "@/common/utils/api/ApiError";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import generateCode from "@/common/utils/codeGenerator";
+import sendEmail from "@/common/utils/sendEmail";
+import {
+  resetPasswordTemplate,
+  emailVerificationTemplate,
+} from "@/common/utils/emailTemplates";
+import crypto from "crypto";
 // RESEND EMAIL VERIFICATION CODE
 export const resendEmailVerificationCode = async (req: Request) => {
   const { email } = req.body;
@@ -77,18 +89,6 @@ export const verifyEmail = async (req: Request) => {
   await user.save();
   return { message: "Email verified successfully" };
 };
-import { Request } from "express";
-import UserModel from "../model";
-import ApiError from "@/common/utils/api/ApiError";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import generateCode from "@/common/utils/codeGenerator";
-import sendEmail from "@/common/utils/sendEmail";
-import {
-  resetPasswordTemplate,
-  emailVerificationTemplate,
-} from "@/common/utils/emailTemplates";
-import crypto from "crypto";
 
 const createToken = (payload: jwt.JwtPayload) => {
   return jwt.sign(payload, process.env.JWT_SECRET as string, {
@@ -130,22 +130,15 @@ export const register = async (req: Request) => {
     );
   }
 
-  const user = await UserModel.findById(newUser._id).select("-password");
-  if (!user)
-    throw new ApiError(
-      "User not found after creation",
-      "INTERNAL_SERVER_ERROR"
-    );
-
-  const token = createToken({ id: user._id });
-  return { user, token };
+  // Do NOT return user or token, just a message
+  return "Verification code sent to your email. Please verify to activate your account.";
 };
 
 export const login = async (req: Request) => {
   const { email, password } = req.body;
-  // Explicitly select password for authentication
+  // Explicitly select password and emailVerified for authentication
   const userWithPassword = await UserModel.findOne({ email }).select(
-    "+password"
+    "+password +emailVerified"
   );
   if (!userWithPassword) throw new ApiError("User not found", "NOT_FOUND");
 
@@ -155,6 +148,14 @@ export const login = async (req: Request) => {
   );
   if (!isPasswordCorrect)
     throw new ApiError("Invalid Credentials", "UNAUTHORIZED");
+
+  // Check if email is verified
+  if (!userWithPassword.emailVerified) {
+    throw new ApiError(
+      "Email must be verified before login - go check your mailbox",
+      "FORBIDDEN"
+    );
+  }
 
   const user = await UserModel.findById(userWithPassword._id).select(
     "-password"
