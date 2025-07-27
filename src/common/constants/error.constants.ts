@@ -1,9 +1,5 @@
 import type { Error as MongooseError } from "mongoose";
-import {
-  ErrorHandler,
-  ErrorType,
-  MongoServerError,
-} from "../types/error.types";
+import { ErrorHandler, ErrorType, MongoServerError } from "../types/error";
 
 const isValidationError = (
   err: ErrorType

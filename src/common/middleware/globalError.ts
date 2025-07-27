@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { Error as MongooseError } from "mongoose";
 import ApiError from "../utils/api/ApiError";
 import { ERROR_MAPPINGS } from "../constants/error.constants";
-import { ErrorType } from "../types/error.types";
+import { ErrorType } from "../types/error";
 
 class ErrorHandler {
   private static getErrorName(err: ErrorType): string {

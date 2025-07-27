@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "isolatedModules": true,
     "baseUrl": "./",
+    "allowSyntheticDefaultImports": true,
     "paths": {
       "@/*": ["src/*"]
     }

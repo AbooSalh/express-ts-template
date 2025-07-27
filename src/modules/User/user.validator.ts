@@ -24,7 +24,7 @@ export const emailValidator = [
     .isEmail()
     .withMessage("Invalid email format")
     .normalizeEmail({ gmail_remove_dots: false })
-    .custom(async (email) => {
+    .custom(async (email : string) => {
       const exists = await UserModel.findOne({ email });
       if (exists) {
         throw new Error("Email already in use");
@@ -38,7 +38,7 @@ export const changePasswordValidator = [
     .withMessage("Current password is required")
     .isString()
     .withMessage("Current password must be a string")
-    .custom(async (value, { req }) => {
+    .custom(async (value: string, { req }: { req: any }) => {
       const id = req.user?._id as string;
       const user = await UserModel.findById(id).select("+password");
       if (!user) {

@@ -1,5 +1,5 @@
 import "tsconfig-paths/register"; // Add this at the top
-
+import "module-alias/register";
 import express from "express";
 import dotenv from "dotenv";
 import { helloRoutes } from "@/modules/hello/hello.module";
