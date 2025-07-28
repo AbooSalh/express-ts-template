@@ -284,7 +284,7 @@ describe("User Service", () => {
 
   describe("updateAuthUser", () => {
     beforeEach(() => {
-      mockRequest.body = { name: "New Name", email: "newemail@example.com" };
+      mockRequest.body = { name: "New Name" };
     });
 
     it("should update authenticated user successfully", async () => {
@@ -294,7 +294,7 @@ describe("User Service", () => {
       );
       expect(UserModel.findByIdAndUpdate).toHaveBeenCalledWith(
         "userId",
-        { name: "New Name", email: "newemail@example.com" },
+        { name: "New Name" },
         { new: true }
       );
       expect(ApiSuccess.send).toHaveBeenCalledWith(
