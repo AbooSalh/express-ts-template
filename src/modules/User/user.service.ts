@@ -1,6 +1,11 @@
 import crypto from "crypto";
 import sendEmail from "@/common/utils/sendEmail";
 import { emailVerificationTemplate } from "@/common/utils/emailTemplates";
+import { Request, Response, NextFunction } from "express";
+import UserModel from "./model";
+import ApiError from "@/common/utils/api/ApiError";
+import bcrypt from "bcryptjs";
+import ApiSuccess from "@/common/utils/api/ApiSuccess";
 // Step 1: Send code for account deletion
 export const sendDeleteAccountCode = async (req: Request, res: Response) => {
   const user = await UserModel.findById(req.user?._id).select(
@@ -46,12 +51,7 @@ export const deleteAccount = async (req: Request, res: Response) => {
   await UserModel.findByIdAndDelete(user._id);
   return ApiSuccess.send(res, "OK", "Account deleted successfully");
 };
-import { Request, Response, NextFunction } from "express";
-import UserModel from "./model";
-import ApiError from "@/common/utils/api/ApiError";
-import bcrypt from "bcryptjs";
-import ApiSuccess from "@/common/utils/api/ApiSuccess";
-import { ApiFeatures, IRequestBody } from "@/common/utils/api/ApiFeatures";
+
 
 export const changePassword = async (req: Request, res: Response) => {
   const id = req.user?._id;
@@ -93,7 +93,6 @@ export const updateAuthUser = async (req: Request, res: Response) => {
     req.user?._id,
     {
       name: req.body.name,
-      email: req.body.email,
     },
     { new: true }
   );

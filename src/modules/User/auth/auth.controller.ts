@@ -1,4 +1,3 @@
-
 import { RequestHandler } from "express";
 import expressAsyncHandler from "express-async-handler";
 import ApiSuccess from "@/common/utils/api/ApiSuccess";
@@ -26,7 +25,7 @@ const verifyEmailHandler: RequestHandler = expressAsyncHandler(
 const registerHandler: RequestHandler = expressAsyncHandler(
   async (req, res) => {
     const result = await authService.register(req);
-    ApiSuccess.send(res, "OK", "User created successfully", result);
+    ApiSuccess.send(res, "OK", "Confirmation code sent to your email", result);
   }
 );
 
