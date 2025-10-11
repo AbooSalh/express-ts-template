@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Schema } from "mongoose";
-import ImageModel from "@/common/models/Image/model";
+import ImageModel from "@/common/modules/Image/model";
 
 type PluginOptions = {
   fields: string[]; // schema paths that hold image ObjectId(s)
