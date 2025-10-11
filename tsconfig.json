@@ -2,7 +2,8 @@
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "target": "ES6",
+    "target": "ES2021",
+    "lib": ["ES2021"],
     "outDir": "dist",
     "rootDir": "src",
     "strict": true,
@@ -10,6 +11,9 @@
     "isolatedModules": true,
     "baseUrl": "./",
     "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true,
     "paths": {
       "@/*": ["src/*"]
     }
