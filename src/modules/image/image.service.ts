@@ -48,17 +48,16 @@ export class ImageService {
   }
 
   async findOne(id: string): Promise<any> {
-    const image = await this.imageModel.findOne({
-      { _id: id },
-    });
+    const image = await this.imageModel.findById(id).exec();
 
     if (!image) {
       throw new NotFoundException('Image not found');
     }
 
     const baseUrl = this.configService.get('BASE_URL', 'http://localhost:5050');
+    const imageObj = image.toObject();
     return {
-      ...image,
+      ...imageObj,
       url: `${baseUrl}/uploads/${image.folder ? image.folder + '/' : ''}${image.fileName}`,
       variants: image.variants.map((v) => ({
         ...v,
@@ -151,7 +150,7 @@ export class ImageService {
     });
 
     const saved = await image.save();
-    return this.findOne(saved._id.toString());
+    return this.findOne(String(saved._id));
   }
 
   async uploadMultiple(
@@ -187,9 +186,7 @@ export class ImageService {
   }
 
   async update(id: string, updateImageDto: UpdateImageDto): Promise<any> {
-    const image = await this.imageModel.findOne({
-      { _id: id },
-    });
+    const image = await this.imageModel.findById(id).exec();
 
     if (!image) {
       throw new NotFoundException('Image not found');
@@ -202,9 +199,7 @@ export class ImageService {
   }
 
   async delete(id: string): Promise<{ message: string }> {
-    const image = await this.imageModel.findOne({
-      { _id: id },
-    });
+    const image = await this.imageModel.findById(id).exec();
 
     if (!image) {
       throw new NotFoundException('Image not found');
