@@ -1,11 +1,12 @@
 import type { Response } from "express";
-import { HTTP_STATUS } from "@/common/constants/httpStatus";
 import {
   ApiErrorDetail,
   ApiErrorResponse,
   HttpErrorStatus,
 } from "../../types/api"; // Changed to relative path
 import ApiResponse from "./ApiResponse";
+import { HTTP_STATUS } from "@/common/constants/httpStatus";
+import env from "@/common/config/env.config";
 
 export default class ApiError extends Error {
   public readonly response: ApiResponse;
@@ -35,7 +36,7 @@ export default class ApiError extends Error {
     const response: ApiErrorResponse = {
       ...this.response,
       errors: this.errors,
-      ...(process.env.NODE_ENV === "development" && { stack: this.stack }),
+      ...(env.NODE_ENV === "development" && { stack: this.stack }),
     };
 
     res.status(this.response.statusCode).json(response);

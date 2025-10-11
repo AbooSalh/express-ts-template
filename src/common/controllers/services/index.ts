@@ -1,66 +1,36 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * @fileoverview Services Index
+ * @description Unified service pattern exports and utilities
+ * @author Paradise Sharm Tours Development Team
+ * @version 1.0.0
+ */
 
-import ApiError from "@/common/utils/api/ApiError";
-import { ApiFeatures, IRequestBody } from "@/common/utils/api/ApiFeatures";
-import { filterExcludedKeys } from "@/common/utils/filterExcludedKeys";
-import { Model } from "mongoose";
+// Main service factory
+export { createBaseService } from "./baseService";
+export type {
+  BaseService,
+  ServiceTranslationConfig,
+  ServiceOptions,
+  ServiceResult,
+  TranslationResult,
+} from "./baseService";
 
-export default function baseServices(model: Model<any>) {
-  return {
-    deleteOne: async (id: string) => {
-      const document = await model.findByIdAndDelete(id);
-      if (!document) {
-        throw new ApiError("Not found", "NOT_FOUND");
-      }
-      return document;
-    },
-    update: async (
-      id: string,
-      updatedData: Partial<any>,
-      excludeData: string[] = []
-    ) => {
-      const filteredData = filterExcludedKeys(updatedData, excludeData);
+// Translation management
+export { default as TranslationManager } from "./translationManager";
+export type {
+  TranslationConfig,
+  TranslationData,
+  TranslationCreateData,
+  TranslationUpdateData,
+} from "./translationManager";
 
-      const document = await model.findByIdAndUpdate(
-        id,
-        { $set: filteredData },
-        { new: true, runValidators: true }
-      );
-      if (!document) {
-        throw new ApiError("Not found", "NOT_FOUND");
-      }
-      return document;
-    },
-    create: async (data: any, excludeData: string[] = []) => {
-      const filteredData = filterExcludedKeys(data, excludeData);
+// Localization services
+export { default as LocalizationService } from "./localizationService";
+export type { LocalizationConfig } from "./localizationService";
 
-      const document = await model.create(filteredData);
-      return document;
-    },
-    getOne: async (id: string, reqQuery: IRequestBody = {}) => {
-      const apiFeatures = new ApiFeatures(model.findById(id), reqQuery)
-        .limitFields()
-        .populate();
-      const { mongooseQuery } = await apiFeatures;
-      const document = await mongooseQuery;
-      if (!document) {
-        throw new ApiError("Not found", "NOT_FOUND");
-      }
-      return document;
-    },
+// Language services
+export { default as languageService } from "./languageService";
+export type { LanguageConfig } from "./languageService";
 
-    getAll: async (reqQuery: { [key: string]: string }) => {
-      // Only use params for filtering, sorting, etc. Ignore body.
-      const apiFeatures = new ApiFeatures(model.find(), reqQuery)
-        .filter()
-        .search()
-        .sort()
-        .paginate(await model.countDocuments())
-        .limitFields()
-        .populate();
-      const { mongooseQuery, pagination } = await apiFeatures;
-      const documents = await mongooseQuery;
-      return { documents, pagination };
-    },
-  };
-}
+// Type definitions
+export type * from "@/common/types/service";
