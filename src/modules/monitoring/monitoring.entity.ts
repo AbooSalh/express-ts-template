@@ -1,111 +1,108 @@
-import { Entity, ObjectIdColumn, ObjectId, Column, CreateDateColumn, Index } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
-@Entity('healthchecks')
-@Index(['component', 'timestamp'])
-export class HealthCheck {
-  @ObjectIdColumn()
-  _id: ObjectId;
-
-  @Column({ default: () => new Date() })
+@Schema({ collection: 'healthchecks', timestamps: false })
+export class HealthCheck extends Document {
+  @Prop({ default: () => new Date(), index: true })
   timestamp: Date;
 
-  @Column()
+  @Prop({ required: true, enum: ['healthy', 'warning', 'critical'] })
   status: 'healthy' | 'warning' | 'critical';
 
-  @Column()
+  @Prop({ required: true, index: true })
   component: string;
 
-  @Column({ nullable: true })
+  @Prop()
   responseTime?: number;
 
-  @Column({ nullable: true })
+  @Prop()
   error?: string;
 
-  @Column({ nullable: true })
+  @Prop({ type: Object })
   details?: Record<string, any>;
 }
 
-@Entity('diskusages')
-export class DiskUsage {
-  @ObjectIdColumn()
-  _id: ObjectId;
+export const HealthCheckSchema = SchemaFactory.createForClass(HealthCheck);
+HealthCheckSchema.index({ component: 1, timestamp: 1 });
 
-  @Column({ default: () => new Date() })
+@Schema({ collection: 'diskusages', timestamps: false })
+export class DiskUsage extends Document {
+  @Prop({ default: () => new Date() })
   timestamp: Date;
 
-  @Column()
+  @Prop({ required: true })
   totalSpace: number;
 
-  @Column()
+  @Prop({ required: true })
   usedSpace: number;
 
-  @Column()
+  @Prop({ required: true })
   freeSpace: number;
 
-  @Column()
+  @Prop({ required: true })
   usagePercentage: number;
 
-  @Column()
+  @Prop({ required: true })
   uploadsSize: number;
 
-  @Column()
+  @Prop({ required: true, enum: ['normal', 'warning', 'critical'] })
   status: 'normal' | 'warning' | 'critical';
 }
 
-@Entity('backuplogs')
-export class BackupLog {
-  @ObjectIdColumn()
-  _id: ObjectId;
+export const DiskUsageSchema = SchemaFactory.createForClass(DiskUsage);
 
-  @Column({ default: () => new Date() })
+@Schema({ collection: 'backuplogs', timestamps: false })
+export class BackupLog extends Document {
+  @Prop({ default: () => new Date() })
   timestamp: Date;
 
-  @Column()
+  @Prop({ required: true, enum: ['uploads', 'database'] })
   type: 'uploads' | 'database';
 
-  @Column()
+  @Prop({ required: true, enum: ['success', 'failed'] })
   status: 'success' | 'failed';
 
-  @Column({ nullable: true })
+  @Prop()
   filePath?: string;
 
-  @Column({ nullable: true })
+  @Prop()
   size?: number;
 
-  @Column({ nullable: true })
+  @Prop()
   duration?: number;
 
-  @Column({ nullable: true })
+  @Prop()
   error?: string;
 }
 
-@Entity('alerts')
-@Index(['timestamp', 'resolved'])
-export class Alert {
-  @ObjectIdColumn()
-  _id: ObjectId;
+export const BackupLogSchema = SchemaFactory.createForClass(BackupLog);
 
-  @Column({ default: () => new Date() })
+@Schema({ collection: 'alerts', timestamps: false })
+export class Alert extends Document {
+  @Prop({ default: () => new Date(), index: true })
   timestamp: Date;
 
-  @Column()
+  @Prop({ required: true, enum: ['info', 'warning', 'critical'] })
   level: 'info' | 'warning' | 'critical';
 
-  @Column()
+  @Prop({ required: true, enum: ['disk', 'database', 'uploads', 'system', 'security'] })
   category: 'disk' | 'database' | 'uploads' | 'system' | 'security';
 
-  @Column()
+  @Prop({ required: true })
   title: string;
 
-  @Column()
+  @Prop({ required: true })
   message: string;
 
-  @Column({ default: false })
+  @Prop({ default: false, index: true })
   resolved: boolean;
 
-  @Column({ nullable: true })
+  @Prop()
   resolvedAt?: Date;
 
-  @Column({ nullable: true })
+  @Prop({ type: Object })
   metadata?: Record<string, any>;
 }
+
+export const AlertSchema = SchemaFactory.createForClass(Alert);
+AlertSchema.index({ timestamp: 1, resolved: 1 });

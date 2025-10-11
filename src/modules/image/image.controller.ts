@@ -11,8 +11,9 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FastifyRequest } from 'fastify';
 import { ImageService } from './image.service';
 import { UpdateImageDto } from './dto/image.dto';
 import { Public } from '@/common/decorators/public.decorator';
@@ -42,15 +43,29 @@ export class ImageController {
   @Post('upload')
   @Roles('admin')
   @Throttle({ default: { limit: 20, ttl: 60000 } })
-  @UseInterceptors(FilesInterceptor('files', 10)) // Allow up to 10 files
   async upload(
-    @UploadedFiles() files: Express.Multer.File[],
+    @Req() req: FastifyRequest,
     @Body() metadata: any,
     @CurrentUser('_id') userId: any,
   ) {
-    if (!files || files.length === 0) {
+    // Handle multipart upload with Fastify
+    const data = await req.file();
+    
+    if (!data) {
       throw new BadRequestException('No files uploaded');
     }
+
+    const files: any[] = [];
+    
+    // Fastify multipart handles files differently
+    // Convert to buffer for processing
+    const buffer = await data.toBuffer();
+    files.push({
+      buffer,
+      originalname: data.filename,
+      mimetype: data.mimetype,
+      size: buffer.length,
+    });
 
     return this.imageService.uploadMultiple(files, metadata, userId?.toString());
   }

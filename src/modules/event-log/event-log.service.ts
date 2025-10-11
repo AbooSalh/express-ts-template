@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { MongoRepository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { EventLog } from './event-log.entity';
 import { ObjectId } from 'mongodb';
 
 @Injectable()
 export class EventLogService {
   constructor(
-    @InjectRepository(EventLog)
-    private eventLogRepository: MongoRepository<EventLog>,
+    @InjectModel(EventLog)
+    private eventLogModel: Model<EventLog>,
   ) {}
 
   async findAll(query: any): Promise<{ events: EventLog[]; total: number; page: number; limit: number }> {
@@ -23,13 +23,13 @@ export class EventLogService {
     if (query.refId) filter.refId = new ObjectId(query.refId);
 
     const [events, total] = await Promise.all([
-      this.eventLogRepository.find({
+      this.eventLogModel.find({
         where: filter,
         skip,
         take: limit,
         order: { createdAt: 'DESC' },
       }),
-      this.eventLogRepository.count(filter),
+      this.eventLogModel.count(filter),
     ]);
 
     return {
@@ -51,7 +51,7 @@ export class EventLogService {
       matchQuery.refId = new ObjectId(tourId);
     }
 
-    const analytics = await this.eventLogRepository.aggregate([
+    const analytics = await this.eventLogModel.aggregate([
       { $match: matchQuery },
       {
         $group: {

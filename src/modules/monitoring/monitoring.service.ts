@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { MongoRepository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { HealthCheck, DiskUsage, BackupLog, Alert } from './monitoring.entity';
@@ -14,14 +14,14 @@ export class MonitoringService {
   private readonly logger = new Logger(MonitoringService.name);
 
   constructor(
-    @InjectRepository(HealthCheck)
-    private healthCheckRepository: MongoRepository<HealthCheck>,
-    @InjectRepository(DiskUsage)
-    private diskUsageRepository: MongoRepository<DiskUsage>,
-    @InjectRepository(BackupLog)
-    private backupLogRepository: MongoRepository<BackupLog>,
-    @InjectRepository(Alert)
-    private alertRepository: MongoRepository<Alert>,
+    @InjectModel(HealthCheck.name)
+    private healthCheckModel: Model<HealthCheck>,
+    @InjectModel(DiskUsage.name)
+    private diskUsageModel: Model<DiskUsage>,
+    @InjectModel(BackupLog.name)
+    private backupLogModel: Model<BackupLog>,
+    @InjectModel(Alert.name)
+    private alertModel: Model<Alert>,
     private configService: ConfigService,
   ) {}
 
@@ -58,21 +58,21 @@ export class MonitoringService {
   }
 
   async getHealthChecks(limit: number = 50): Promise<HealthCheck[]> {
-    return this.healthCheckRepository.find({
+    return this.healthCheckModel.find({
       order: { timestamp: 'DESC' },
       take: limit,
     });
   }
 
   async getDiskUsage(): Promise<DiskUsage[]> {
-    return this.diskUsageRepository.find({
+    return this.diskUsageModel.find({
       order: { timestamp: 'DESC' },
       take: 50,
     });
   }
 
   async getBackups(): Promise<BackupLog[]> {
-    return this.backupLogRepository.find({
+    return this.backupLogModel.find({
       order: { timestamp: 'DESC' },
       take: 50,
     });
@@ -101,7 +101,7 @@ export class MonitoringService {
       const duration = Date.now() - startTime;
       const size = fs.statSync(filePath).size;
 
-      const backup = this.backupLogRepository.create({
+      const backup = new this.backupLogModel({
         type: 'database',
         status: 'success',
         filePath,
@@ -109,20 +109,20 @@ export class MonitoringService {
         duration,
       });
 
-      await this.backupLogRepository.save(backup);
+      await backup.save();
 
       return { message: 'Backup created successfully', backup };
     } catch (error: any) {
       const duration = Date.now() - startTime;
 
-      const backup = this.backupLogRepository.create({
+      const backup = new this.backupLogModel({
         type: 'database',
         status: 'failed',
         duration,
         error: error.message,
       });
 
-      await this.backupLogRepository.save(backup);
+      await backup.save();
 
       throw error;
     }
@@ -134,7 +134,7 @@ export class MonitoringService {
       filter.resolved = resolved;
     }
 
-    return this.alertRepository.find({
+    return this.alertModel.find({
       where: filter,
       order: { timestamp: 'DESC' },
       take: 100,
@@ -142,14 +142,14 @@ export class MonitoringService {
   }
 
   async resolveAlert(id: string): Promise<{ message: string }> {
-    await this.alertRepository.updateOne(
-      { _id: new ObjectId(id) } as any,
+    await this.alertModel.updateOne(
+      { _id: id },
       {
         $set: {
           resolved: true,
           resolvedAt: new Date(),
         },
-      } as any,
+      },
     );
 
     return { message: 'Alert resolved successfully' };
@@ -161,7 +161,7 @@ export class MonitoringService {
     // Get system stats
     const stats = await this.getStats();
     const alerts = await this.getAlerts(false);
-    const recentBackups = await this.backupLogRepository.find({
+    const recentBackups = await this.backupLogModel.find({
       order: { timestamp: 'DESC' },
       take: 5,
     });
@@ -217,7 +217,7 @@ export class MonitoringService {
         status = 'warning';
       }
 
-      const diskUsage = this.diskUsageRepository.create({
+      const diskUsage = new this.diskUsageModel({
         totalSpace,
         usedSpace,
         freeSpace,
@@ -226,7 +226,7 @@ export class MonitoringService {
         status,
       });
 
-      await this.diskUsageRepository.save(diskUsage);
+      await diskUsage.save();
 
       if (status !== 'normal') {
         this.logger.warn(`Disk usage ${status}: ${usagePercentage.toFixed(2)}%`);

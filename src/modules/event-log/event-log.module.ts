@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MongooseModule } from '@nestjs/mongoose';
 import { EventLogService } from './event-log.service';
 import { EventLogController } from './event-log.controller';
-import { EventLog } from './event-log.entity';
+import { EventLog, EventLogSchema } from './event-log.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([EventLog])],
+  imports: [MongooseModule.forFeature([{ name: EventLog.name, schema: EventLogSchema }])],
   controllers: [EventLogController],
   providers: [EventLogService],
   exports: [EventLogService],
