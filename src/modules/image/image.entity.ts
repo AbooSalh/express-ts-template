@@ -1,4 +1,5 @@
-import { Entity, ObjectIdColumn, ObjectId, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
 export interface ImageVariant {
   name: string;
@@ -16,57 +17,55 @@ export interface ImageReference {
   addedAt: Date;
 }
 
-@Entity('images')
-@Index(['folder', 'createdAt'])
-export class Image {
-  @ObjectIdColumn()
-  _id: ObjectId;
-
-  @Column()
+@Schema({ collection: 'images', timestamps: true })
+export class Image extends Document {
+  @Prop({ required: true })
   originalName: string;
 
-  @Column()
+  @Prop({ required: true })
   fileName: string;
 
-  @Column()
+  @Prop({ required: true })
   mimeType: string;
 
-  @Column()
+  @Prop({ required: true })
   sizeBytes: number;
 
-  @Column({ nullable: true })
+  @Prop()
   width?: number;
 
-  @Column({ nullable: true })
+  @Prop()
   height?: number;
 
-  @Column({ nullable: true })
+  @Prop({ index: true })
   folder?: string;
 
-  @Column({ default: [] })
+  @Prop({ type: Array, default: [] })
   variants: ImageVariant[];
 
-  @Column({ nullable: true })
+  @Prop()
   createdBy?: string;
 
-  @Column({ default: [] })
+  @Prop({ type: Array, default: [] })
   references: ImageReference[];
 
-  @Column({ nullable: true })
+  @Prop()
   alt?: string;
 
-  @Column({ nullable: true })
+  @Prop()
   title?: string;
 
-  @Column({ nullable: true })
+  @Prop()
   description?: string;
 
-  @Column({ default: [] })
+  @Prop({ type: [String], default: [] })
   tags: string[];
 
-  @CreateDateColumn()
   createdAt: Date;
-
-  @UpdateDateColumn()
   updatedAt: Date;
 }
+
+export const ImageSchema = SchemaFactory.createForClass(Image);
+
+// Compound index for faster queries
+ImageSchema.index({ folder: 1, createdAt: 1 });

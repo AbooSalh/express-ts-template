@@ -7,8 +7,8 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { MongoRepository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { User, RefreshToken } from '../user/user.entity';
 import { EmailService } from '@/common/services/email.service';
 import { CodeGenerator } from '@/common/utils/code-generator.util';
@@ -23,15 +23,14 @@ import {
   LogoutDto,
   ResendCodeDto,
 } from './dto/auth.dto';
-import { ObjectId } from 'mongodb';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: MongoRepository<User>,
+    @InjectModel(User.name)
+    private userModel: Model<User>,
     private jwtService: JwtService,
     private configService: ConfigService,
     private emailService: EmailService,
@@ -69,8 +68,8 @@ export class AuthService {
   ): Promise<void> {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    await this.userRepository.updateOne(
-      { _id: new ObjectId(userId) } as any,
+    await this.userModel.updateOne(
+      { _id: userId },
       {
         $push: {
           refreshTokens: {
@@ -81,20 +80,20 @@ export class AuthService {
             createdAt: new Date(),
           },
         },
-      } as any,
+      },
     );
   }
 
   private async cleanupExpiredTokens(userId: string): Promise<void> {
-    await this.userRepository.updateOne(
-      { _id: new ObjectId(userId) } as any,
+    await this.userModel.updateOne(
+      { _id: userId },
       {
         $pull: {
           refreshTokens: {
             expiresAt: { $lt: new Date() },
           },
         },
-      } as any,
+      },
     );
   }
 
@@ -102,8 +101,8 @@ export class AuthService {
     const { name, email, password } = registerDto;
 
     // Check if user exists
-    const existingUser = await this.userRepository.findOne({
-      where: { email } as any,
+    const existingUser = await this.userModel.findOne({
+      where: { email },
       select: ['_id', 'email', 'emailVerified', 'emailVerificationCode', 'emailVerificationCodeExpires'],
     });
 
@@ -128,17 +127,17 @@ export class AuthService {
     if (existingUser) {
       this.logger.log(`User re-registering with unverified email: ${email}`);
       Object.assign(existingUser, userData);
-      user = await this.userRepository.save(existingUser);
+      user = await existingUser.save();
     } else {
-      user = this.userRepository.create(userData);
-      user = await this.userRepository.save(user);
+      user = new this.userModel(userData);
+      user = await user.save();
     }
 
     try {
       await this.emailService.sendVerificationEmail(user.email, code);
     } catch (error: any) {
       if (!existingUser) {
-        await this.userRepository.delete(user._id);
+        await this.userModel.deleteOne({ _id: user._id }).exec();
       }
       this.logger.error(`Failed to send verification email to ${user.email}`, error.stack);
       throw new BadRequestException('Failed to send verification email');
@@ -153,11 +152,11 @@ export class AuthService {
     const { email, code } = verifyEmailDto;
     const hashedCode = CodeGenerator.hashCode(code);
 
-    const user = await this.userRepository.findOne({
+    const user = await this.userModel.findOne({
       where: {
         email,
         emailVerificationCode: hashedCode,
-      } as any,
+      },
       select: ['_id', 'email', 'emailVerificationCode', 'emailVerificationCodeExpires', 'emailVerified'],
     });
 
@@ -165,15 +164,15 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired verification code');
     }
 
-    await this.userRepository.updateOne(
-      { _id: user._id } as any,
+    await this.userModel.updateOne(
+      { _id: user._id },
       {
         $set: {
           emailVerified: true,
           emailVerificationCode: null,
           emailVerificationCodeExpires: null,
         },
-      } as any,
+      },
     );
 
     return { message: 'Email verified successfully' };
@@ -182,8 +181,8 @@ export class AuthService {
   async resendEmailVerificationCode(resendCodeDto: ResendCodeDto): Promise<{ message: string }> {
     const { email } = resendCodeDto;
     
-    const user = await this.userRepository.findOne({
-      where: { email } as any,
+    const user = await this.userModel.findOne({
+      where: { email },
       select: ['_id', 'email', 'emailVerified', 'emailVerificationCode', 'emailVerificationCodeExpires'],
     });
 
@@ -202,14 +201,14 @@ export class AuthService {
     const code = CodeGenerator.generateSecureCode(16);
     const hashedCode = CodeGenerator.hashCode(code);
 
-    await this.userRepository.updateOne(
-      { _id: user._id } as any,
+    await this.userModel.updateOne(
+      { _id: user._id },
       {
         $set: {
           emailVerificationCode: hashedCode,
           emailVerificationCodeExpires: new Date(Date.now() + 10 * 60 * 1000),
         },
-      } as any,
+      },
     );
 
     await this.emailService.sendVerificationEmail(user.email, code);
@@ -224,8 +223,8 @@ export class AuthService {
   ): Promise<{ user: User; accessToken: string; refreshToken: string }> {
     const { email, password } = loginDto;
 
-    const userWithPassword = await this.userRepository.findOne({
-      where: { email } as any,
+    const userWithPassword = await this.userModel.findOne({
+      where: { email },
       select: ['_id', 'email', 'password', 'emailVerified', 'name', 'role', 'slug'],
     });
 
@@ -237,8 +236,8 @@ export class AuthService {
       throw new ForbiddenException('Email must be verified before login - go check your mailbox');
     }
 
-    const user = await this.userRepository.findOne({
-      where: { _id: userWithPassword._id } as any,
+    const user = await this.userModel.findOne({
+      where: { _id: userWithPassword._id },
     });
 
     if (!user) {
@@ -257,8 +256,8 @@ export class AuthService {
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
     const { email } = forgotPasswordDto;
     
-    const user = await this.userRepository.findOne({
-      where: { email } as any,
+    const user = await this.userModel.findOne({
+      where: { email },
       select: ['_id', 'email', 'passwordResetCode', 'passwordResetCodeExpires', 'passwordResetVerified'],
     });
 
@@ -269,29 +268,29 @@ export class AuthService {
     const code = CodeGenerator.generateSecureCode(16);
     const hashedCode = CodeGenerator.hashCode(code);
 
-    await this.userRepository.updateOne(
-      { _id: user._id } as any,
+    await this.userModel.updateOne(
+      { _id: user._id },
       {
         $set: {
           passwordResetCode: hashedCode,
           passwordResetCodeExpires: new Date(Date.now() + 10 * 60 * 1000),
           passwordResetVerified: false,
         },
-      } as any,
+      },
     );
 
     try {
       await this.emailService.sendPasswordResetEmail(user.email, code);
     } catch (error) {
-      await this.userRepository.updateOne(
-        { _id: user._id } as any,
+      await this.userModel.updateOne(
+        { _id: user._id },
         {
           $set: {
             passwordResetCode: null,
             passwordResetCodeExpires: null,
             passwordResetVerified: null,
           },
-        } as any,
+        },
       );
       throw new BadRequestException('Failed to send email');
     }
@@ -302,8 +301,8 @@ export class AuthService {
   async resendPasswordResetCode(resendCodeDto: ResendCodeDto): Promise<{ message: string }> {
     const { email } = resendCodeDto;
     
-    const user = await this.userRepository.findOne({
-      where: { email } as any,
+    const user = await this.userModel.findOne({
+      where: { email },
       select: ['_id', 'email', 'passwordResetCode', 'passwordResetCodeExpires', 'passwordResetVerified'],
     });
 
@@ -318,29 +317,29 @@ export class AuthService {
     const code = CodeGenerator.generateSecureCode(16);
     const hashedCode = CodeGenerator.hashCode(code);
 
-    await this.userRepository.updateOne(
-      { _id: user._id } as any,
+    await this.userModel.updateOne(
+      { _id: user._id },
       {
         $set: {
           passwordResetCode: hashedCode,
           passwordResetCodeExpires: new Date(Date.now() + 10 * 60 * 1000),
           passwordResetVerified: false,
         },
-      } as any,
+      },
     );
 
     try {
       await this.emailService.sendPasswordResetEmail(user.email, code);
     } catch (error) {
-      await this.userRepository.updateOne(
-        { _id: user._id } as any,
+      await this.userModel.updateOne(
+        { _id: user._id },
         {
           $set: {
             passwordResetCode: null,
             passwordResetCodeExpires: null,
             passwordResetVerified: null,
           },
-        } as any,
+        },
       );
       throw new BadRequestException('Failed to send email');
     }
@@ -352,11 +351,11 @@ export class AuthService {
     const { email, code } = verifyResetCodeDto;
     const hashedCode = CodeGenerator.hashCode(code);
 
-    const user = await this.userRepository.findOne({
+    const user = await this.userModel.findOne({
       where: {
         email,
         passwordResetCode: hashedCode,
-      } as any,
+      },
       select: ['_id', 'email', 'passwordResetCode', 'passwordResetCodeExpires', 'passwordResetVerified'],
     });
 
@@ -364,13 +363,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid reset code or expired');
     }
 
-    await this.userRepository.updateOne(
-      { _id: user._id } as any,
+    await this.userModel.updateOne(
+      { _id: user._id },
       {
         $set: {
           passwordResetVerified: true,
         },
-      } as any,
+      },
     );
 
     return { message: 'Reset code verified successfully' };
@@ -383,8 +382,8 @@ export class AuthService {
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const { email, newPassword } = resetPasswordDto;
 
-    const user = await this.userRepository.findOne({
-      where: { email } as any,
+    const user = await this.userModel.findOne({
+      where: { email },
       select: ['_id', 'email', 'passwordResetCode', 'passwordResetCodeExpires', 'passwordResetVerified'],
     });
 
@@ -397,17 +396,17 @@ export class AuthService {
     }
 
     user.password = newPassword;
-    await this.userRepository.save(user);
+    await user.save();
 
-    await this.userRepository.updateOne(
-      { _id: user._id } as any,
+    await this.userModel.updateOne(
+      { _id: user._id },
       {
         $set: {
           passwordResetCode: null,
           passwordResetCodeExpires: null,
           passwordResetVerified: null,
         },
-      } as any,
+      },
     );
 
     const accessToken = this.createAccessToken(user._id.toString());
@@ -431,8 +430,8 @@ export class AuthService {
       });
 
       const userId = new ObjectId(decoded.id);
-      const user = await this.userRepository.findOne({
-        where: { _id: userId } as any,
+      const user = await this.userModel.findOne({
+        where: { _id: userId },
         select: ['_id', 'email', 'refreshTokens', 'emailVerified'],
       });
 
@@ -456,11 +455,11 @@ export class AuthService {
       const newRefreshToken = this.createRefreshToken(user._id.toString());
 
       // Remove old token
-      await this.userRepository.updateOne(
-        { _id: user._id } as any,
+      await this.userModel.updateOne(
+        { _id: user._id },
         {
           $pull: { refreshTokens: { token } },
-        } as any,
+        },
       );
 
       // Add new token
@@ -482,11 +481,11 @@ export class AuthService {
       });
 
       const userId = new ObjectId(decoded.id);
-      await this.userRepository.updateOne(
-        { _id: userId } as any,
+      await this.userModel.updateOne(
+        { _id: userId },
         {
           $pull: { refreshTokens: { token } },
-        } as any,
+        },
       );
     } catch (error) {
       // Even if invalid, return success to prevent token enumeration
@@ -498,8 +497,8 @@ export class AuthService {
   async getUserSessions(userId: string): Promise<{ sessions: any[] }> {
     await this.cleanupExpiredTokens(userId);
 
-    const user = await this.userRepository.findOne({
-      where: { _id: new ObjectId(userId) } as any,
+    const user = await this.userModel.findOne({
+      where: { _id: userId },
       select: ['_id', 'refreshTokens'],
     });
 
@@ -520,11 +519,11 @@ export class AuthService {
   }
 
   async revokeSession(userId: string, sessionId: string): Promise<{ message: string }> {
-    const result = await this.userRepository.updateOne(
-      { _id: new ObjectId(userId) } as any,
+    const result = await this.userModel.updateOne(
+      { _id: userId },
       {
         $pull: { refreshTokens: { _id: new ObjectId(sessionId) } },
-      } as any,
+      },
     );
 
     if (result.modifiedCount === 0) {

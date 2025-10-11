@@ -1,38 +1,39 @@
-import { Entity, ObjectIdColumn, ObjectId, Column, CreateDateColumn, Index } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
-@Entity('eventlogs')
-@Index(['refModel', 'refId', 'type'])
-export class EventLog {
-  @ObjectIdColumn()
-  _id: ObjectId;
-
-  @Column()
+@Schema({ collection: 'eventlogs', timestamps: { createdAt: true, updatedAt: false } })
+export class EventLog extends Document {
+  @Prop({ required: true, index: true })
   refModel: string; // e.g., "Tour", "User", "Product"
 
-  @Column()
+  @Prop({ required: true, index: true })
   refId: string; // The actual document ID
 
-  @Column()
+  @Prop({ required: true, index: true })
   type: string; // e.g., "view", "click", "like"
 
-  @Column()
+  @Prop({ required: true })
   ip: string;
 
-  @Column({ nullable: true })
+  @Prop()
   country?: string;
 
-  @Column({ nullable: true })
+  @Prop()
   userAgent?: string;
 
-  @Column({ nullable: true })
+  @Prop()
   userId?: string;
 
-  @Column({ default: 1 })
+  @Prop({ default: 1 })
   viewCount: number; // Number of views from this IP/user
 
-  @Column({ default: () => new Date() })
+  @Prop({ default: () => new Date() })
   lastViewedAt: Date; // Last time this IP/user viewed
 
-  @CreateDateColumn()
   createdAt: Date;
 }
+
+export const EventLogSchema = SchemaFactory.createForClass(EventLog);
+
+// Compound index for faster queries
+EventLogSchema.index({ refModel: 1, refId: 1, type: 1 });

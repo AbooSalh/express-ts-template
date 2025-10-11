@@ -1,12 +1,26 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MongooseModule } from '@nestjs/mongoose';
 import { MonitoringService } from './monitoring.service';
 import { MonitoringController } from './monitoring.controller';
-import { HealthCheck, DiskUsage, BackupLog, Alert } from './monitoring.entity';
+import {
+  HealthCheck,
+  HealthCheckSchema,
+  DiskUsage,
+  DiskUsageSchema,
+  BackupLog,
+  BackupLogSchema,
+  Alert,
+  AlertSchema,
+} from './monitoring.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([HealthCheck, DiskUsage, BackupLog, Alert]),
+    MongooseModule.forFeature([
+      { name: HealthCheck.name, schema: HealthCheckSchema },
+      { name: DiskUsage.name, schema: DiskUsageSchema },
+      { name: BackupLog.name, schema: BackupLogSchema },
+      { name: Alert.name, schema: AlertSchema },
+    ]),
   ],
   controllers: [MonitoringController],
   providers: [MonitoringService],

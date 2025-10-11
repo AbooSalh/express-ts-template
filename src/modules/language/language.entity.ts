@@ -1,30 +1,27 @@
-import { Entity, ObjectIdColumn, ObjectId, Column, CreateDateColumn, UpdateDateColumn, BeforeInsert, Index } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
-@Entity('languages')
-@Index(['code'], { unique: true })
-export class Language {
-  @ObjectIdColumn()
-  _id: ObjectId;
-
-  @Column({ unique: true })
+@Schema({ collection: 'languages', timestamps: true })
+export class Language extends Document {
+  @Prop({ required: true, unique: true, index: true })
   code: string; // "en", "ar", "fr"
 
-  @Column()
+  @Prop({ required: true })
   name: string; // "English", "العربية"
 
-  @Column({ default: false })
+  @Prop({ default: false })
   isDefault: boolean;
 
-  @CreateDateColumn()
   createdAt: Date;
-
-  @UpdateDateColumn()
   updatedAt: Date;
-
-  @BeforeInsert()
-  validateCode() {
-    if (!/^[a-z]{2}$/.test(this.code)) {
-      throw new Error(`${this.code} is not a valid language code!`);
-    }
-  }
 }
+
+export const LanguageSchema = SchemaFactory.createForClass(Language);
+
+// Validate code before saving
+LanguageSchema.pre('save', function (next) {
+  if (!/^[a-z]{2}$/.test(this.code)) {
+    throw new Error(`${this.code} is not a valid language code!`);
+  }
+  next();
+});

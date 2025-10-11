@@ -3,8 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { MongoRepository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Image, ImageVariant } from './image.entity';
 import { UpdateImageDto } from './dto/image.dto';
 import { ObjectId } from 'mongodb';
@@ -16,8 +16,8 @@ import sharp from 'sharp';
 @Injectable()
 export class ImageService {
   constructor(
-    @InjectRepository(Image)
-    private imageRepository: MongoRepository<Image>,
+    @InjectModel(Image)
+    private imageModel: Model<Image>,
     private configService: ConfigService,
   ) {}
 
@@ -30,13 +30,13 @@ export class ImageService {
     if (query.folder) filter.folder = query.folder;
 
     const [images, total] = await Promise.all([
-      this.imageRepository.find({
+      this.imageModel.find({
         where: filter,
         skip,
         take: limit,
         order: { createdAt: 'DESC' },
       }),
-      this.imageRepository.count(filter),
+      this.imageModel.count(filter),
     ]);
 
     const baseUrl = this.configService.get('BASE_URL', 'http://localhost:5050');
@@ -53,8 +53,8 @@ export class ImageService {
   }
 
   async findOne(id: string): Promise<any> {
-    const image = await this.imageRepository.findOne({
-      where: { _id: new ObjectId(id) } as any,
+    const image = await this.imageModel.findOne({
+      { _id: id },
     });
 
     if (!image) {
@@ -139,7 +139,7 @@ export class ImageService {
       }
     }
 
-    const image = this.imageRepository.create({
+    const image = new this.imageModel({
       originalName: file.originalname,
       fileName,
       mimeType: file.mimetype,
@@ -155,7 +155,7 @@ export class ImageService {
       tags: metadata.tags || [],
     });
 
-    const saved = await this.imageRepository.save(image);
+    const saved = await image.save();
     return this.findOne(saved._id.toString());
   }
 
@@ -192,8 +192,8 @@ export class ImageService {
   }
 
   async update(id: string, updateImageDto: UpdateImageDto): Promise<any> {
-    const image = await this.imageRepository.findOne({
-      where: { _id: new ObjectId(id) } as any,
+    const image = await this.imageModel.findOne({
+      { _id: id },
     });
 
     if (!image) {
@@ -201,14 +201,14 @@ export class ImageService {
     }
 
     Object.assign(image, updateImageDto);
-    await this.imageRepository.save(image);
+    await image.save();
 
     return this.findOne(id);
   }
 
   async delete(id: string): Promise<{ message: string }> {
-    const image = await this.imageRepository.findOne({
-      where: { _id: new ObjectId(id) } as any,
+    const image = await this.imageModel.findOne({
+      { _id: id },
     });
 
     if (!image) {
@@ -236,7 +236,7 @@ export class ImageService {
       console.error('Error deleting files:', error);
     }
 
-    await this.imageRepository.delete({ _id: new ObjectId(id) } as any);
+    await this.imageModel.deleteOne({ _id: id });
 
     return { message: 'Image deleted successfully' };
   }

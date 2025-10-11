@@ -1,4 +1,5 @@
-import { Entity, ObjectIdColumn, ObjectId, Column, CreateDateColumn, UpdateDateColumn, BeforeInsert, BeforeUpdate, Index } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 
 export interface RefreshToken {
@@ -9,82 +10,87 @@ export interface RefreshToken {
   createdAt: Date;
 }
 
-@Entity('users')
-@Index(['email'], { unique: true })
-export class User {
-  @ObjectIdColumn()
-  _id: ObjectId;
-
-  @Column()
+@Schema({ collection: 'users', timestamps: true })
+export class User extends Document {
+  @Prop({ required: true })
   name: string;
 
-  @Column({ nullable: true })
+  @Prop()
   slug: string;
 
-  @Column({ unique: true })
+  @Prop({ required: true, unique: true, index: true })
   email: string;
 
-  @Column({ select: false })
+  @Prop({ required: true, select: false })
   password: string;
 
-  @Column({ nullable: true })
+  @Prop()
   passwordChangedAt: Date;
 
-  @Column({ nullable: true, select: false })
+  @Prop({ select: false })
   passwordResetCode: string;
 
-  @Column({ nullable: true, select: false })
+  @Prop({ select: false })
   passwordResetCodeExpires: Date;
 
-  @Column({ nullable: true, select: false, default: undefined })
+  @Prop({ select: false })
   passwordResetVerified: boolean;
 
-  @Column({ nullable: true, select: false })
+  @Prop({ select: false })
   emailVerificationCode: string;
 
-  @Column({ nullable: true, select: false })
+  @Prop({ select: false })
   emailVerificationCodeExpires: Date;
 
-  @Column({ default: false, select: false })
+  @Prop({ default: false, select: false })
   emailVerified: boolean;
 
-  @Column({ nullable: true, select: false })
+  @Prop({ select: false })
   deleteAccountCode: string;
 
-  @Column({ nullable: true, select: false })
+  @Prop({ select: false })
   deleteAccountCodeExpires: Date;
 
-  @Column({ default: [] })
+  @Prop({ type: Array, default: [] })
   refreshTokens: RefreshToken[];
 
-  @Column({ default: 'user' })
+  @Prop({ enum: ['user', 'admin'], default: 'user' })
   role: 'user' | 'admin';
 
-  @CreateDateColumn()
   createdAt: Date;
-
-  @UpdateDateColumn()
   updatedAt: Date;
 
-  @BeforeInsert()
-  @BeforeUpdate()
-  async hashPassword() {
-    if (this.password && !this.password.startsWith('$2')) {
-      this.password = await bcrypt.hash(this.password, 10);
-    }
-  }
-
-  @BeforeInsert()
-  async generateSlug() {
-    if (this.name && !this.slug) {
-      this.slug = this.name
-        .toLowerCase()
-        .replace(/[^\w ]+/g, '')
-        .replace(/ +/g, '-');
-    }
-  }
-
-  async comparePassword(candidatePassword: string): Promise<boolean> {
-    return bcrypt.compare(candidatePassword, this.password);
-  }
+  // Instance methods
+  comparePassword: (candidatePassword: string) => Promise<boolean>;
 }
+
+export const UserSchema = SchemaFactory.createForClass(User);
+
+// Hash password before saving
+UserSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) {
+    return next();
+  }
+  
+  const password = this.get('password');
+  if (password && !password.startsWith('$2')) {
+    this.set('password', await bcrypt.hash(password, 10));
+  }
+  next();
+});
+
+// Generate slug before saving
+UserSchema.pre('save', function (next) {
+  if (this.name && !this.slug) {
+    this.slug = this.name
+      .toLowerCase()
+      .replace(/[^\w ]+/g, '')
+      .replace(/ +/g, '-');
+  }
+  next();
+});
+
+// Instance method to compare password
+UserSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+  return bcrypt.compare(candidatePassword, this.password);
+};
