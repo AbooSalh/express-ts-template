@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { envValidationSchema } from './config/env.validation';
-import { typeOrmConfig } from './config/typeorm.config';
+import { mongooseConfig } from './config/mongoose.config';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { LanguageModule } from './modules/language/language.module';
@@ -26,15 +26,15 @@ import { HealthController } from './health.controller';
       validationSchema: envValidationSchema,
     }),
     
-    // TypeORM module
-    TypeOrmModule.forRootAsync({
-      useFactory: typeOrmConfig,
+    // Mongoose module for MongoDB
+    MongooseModule.forRootAsync({
+      useFactory: mongooseConfig,
     }),
     
-    // Throttler (Rate limiting)
+    // Throttler (Rate limiting) - optimized for Fastify
     ThrottlerModule.forRoot([{
       ttl: 60000, // 1 minute
-      limit: 100,
+      limit: 100, // 100 requests per minute
     }]),
     
     // Schedule module for cron jobs
