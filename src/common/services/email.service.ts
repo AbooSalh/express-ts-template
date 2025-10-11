@@ -9,6 +9,13 @@ export class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor(private configService: ConfigService) {
+    // Check if SMTP is configured
+    const smtpHost = this.configService.get('SMTP_HOST');
+    if (!smtpHost || smtpHost.includes('smtp.example.com')) {
+      this.logger.warn('SMTP not configured - email sending disabled for development');
+      return;
+    }
+
     this.transporter = nodemailer.createTransport({
       host: this.configService.get('SMTP_HOST'),
       port: this.configService.get('SMTP_PORT'),
@@ -21,6 +28,12 @@ export class EmailService {
   }
 
   async sendMail(options: SendMailOptions): Promise<void> {
+    // If SMTP not configured, just log and return (development mode)
+    if (!this.transporter) {
+      this.logger.log(`Email would be sent to ${options.to} (SMTP disabled)`);
+      return;
+    }
+
     try {
       await this.transporter.sendMail({
         from: `"${this.configService.get('SMTP_FROM_NAME')}" <${this.configService.get('SMTP_FROM_EMAIL')}>`,

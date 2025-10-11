@@ -9,10 +9,10 @@ import {
   Query,
   UseGuards,
   UseInterceptors,
-  UploadedFile,
+  UploadedFiles,
   BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { ImageService } from './image.service';
 import { UpdateImageDto } from './dto/image.dto';
 import { Public } from '@/common/decorators/public.decorator';
@@ -42,17 +42,17 @@ export class ImageController {
   @Post('upload')
   @Roles('admin')
   @Throttle({ default: { limit: 20, ttl: 60000 } })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FilesInterceptor('files', 10)) // Allow up to 10 files
   async upload(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles() files: Express.Multer.File[],
     @Body() metadata: any,
     @CurrentUser('_id') userId: any,
   ) {
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files uploaded');
     }
 
-    return this.imageService.upload(file, metadata, userId);
+    return this.imageService.uploadMultiple(files, metadata, userId?.toString());
   }
 
   @Put(':id')

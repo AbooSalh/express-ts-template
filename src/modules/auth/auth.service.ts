@@ -23,7 +23,7 @@ import {
   LogoutDto,
   ResendCodeDto,
 } from './dto/auth.dto';
-import { ObjectId } from 'typeorm';
+import { ObjectId } from 'mongodb';
 
 @Injectable()
 export class AuthService {
@@ -37,9 +37,9 @@ export class AuthService {
     private emailService: EmailService,
   ) {}
 
-  private createAccessToken(userId: ObjectId): string {
+  private createAccessToken(userId: string): string {
     return this.jwtService.sign(
-      { id: userId.toString() },
+      { id: userId },
       {
         secret: this.configService.get('JWT_SECRET'),
         expiresIn: this.configService.get('JWT_EXPIRES_IN', '1d'),
@@ -49,7 +49,7 @@ export class AuthService {
     );
   }
 
-  private createRefreshToken(userId: ObjectId): string {
+  private createRefreshToken(userId: string): string {
     return this.jwtService.sign(
       { id: userId.toString() },
       {
@@ -62,7 +62,7 @@ export class AuthService {
   }
 
   private async saveRefreshToken(
-    userId: ObjectId,
+    userId: string,
     refreshToken: string,
     deviceInfo: string,
     ipAddress: string,
@@ -70,7 +70,7 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
     await this.userRepository.updateOne(
-      { _id: userId } as any,
+      { _id: new ObjectId(userId) } as any,
       {
         $push: {
           refreshTokens: {
@@ -85,9 +85,9 @@ export class AuthService {
     );
   }
 
-  private async cleanupExpiredTokens(userId: ObjectId): Promise<void> {
+  private async cleanupExpiredTokens(userId: string): Promise<void> {
     await this.userRepository.updateOne(
-      { _id: userId } as any,
+      { _id: new ObjectId(userId) } as any,
       {
         $pull: {
           refreshTokens: {
@@ -108,7 +108,7 @@ export class AuthService {
     });
 
     if (existingUser && (existingUser as any).emailVerified) {
-      throw new BadRequestException('Registration failed. Please try again later.');
+      throw new BadRequestException('Email already registered and verified. Please use login instead.');
     }
 
     // Generate verification code
@@ -245,11 +245,11 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const accessToken = this.createAccessToken(user._id);
-    const refreshToken = this.createRefreshToken(user._id);
+    const accessToken = this.createAccessToken(user._id.toString());
+    const refreshToken = this.createRefreshToken(user._id.toString());
 
-    await this.saveRefreshToken(user._id, refreshToken, deviceInfo, ipAddress);
-    await this.cleanupExpiredTokens(user._id);
+    await this.saveRefreshToken(user._id.toString(), refreshToken, deviceInfo, ipAddress);
+    await this.cleanupExpiredTokens(user._id.toString());
 
     return { user, accessToken, refreshToken };
   }
@@ -410,10 +410,10 @@ export class AuthService {
       } as any,
     );
 
-    const accessToken = this.createAccessToken(user._id);
-    const refreshToken = this.createRefreshToken(user._id);
+    const accessToken = this.createAccessToken(user._id.toString());
+    const refreshToken = this.createRefreshToken(user._id.toString());
 
-    await this.saveRefreshToken(user._id, refreshToken, deviceInfo, ipAddress);
+    await this.saveRefreshToken(user._id.toString(), refreshToken, deviceInfo, ipAddress);
 
     return { accessToken, refreshToken };
   }
@@ -452,8 +452,8 @@ export class AuthService {
         throw new ForbiddenException('Email must be verified');
       }
 
-      const newAccessToken = this.createAccessToken(user._id);
-      const newRefreshToken = this.createRefreshToken(user._id);
+      const newAccessToken = this.createAccessToken(user._id.toString());
+      const newRefreshToken = this.createRefreshToken(user._id.toString());
 
       // Remove old token
       await this.userRepository.updateOne(
@@ -464,8 +464,8 @@ export class AuthService {
       );
 
       // Add new token
-      await this.saveRefreshToken(user._id, newRefreshToken, deviceInfo, ipAddress);
-      await this.cleanupExpiredTokens(user._id);
+      await this.saveRefreshToken(user._id.toString(), newRefreshToken, deviceInfo, ipAddress);
+      await this.cleanupExpiredTokens(user._id.toString());
 
       return { accessToken: newAccessToken, refreshToken: newRefreshToken };
     } catch (error) {
@@ -495,11 +495,11 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
-  async getUserSessions(userId: ObjectId): Promise<{ sessions: any[] }> {
+  async getUserSessions(userId: string): Promise<{ sessions: any[] }> {
     await this.cleanupExpiredTokens(userId);
 
     const user = await this.userRepository.findOne({
-      where: { _id: userId } as any,
+      where: { _id: new ObjectId(userId) } as any,
       select: ['_id', 'refreshTokens'],
     });
 
@@ -519,9 +519,9 @@ export class AuthService {
     return { sessions };
   }
 
-  async revokeSession(userId: ObjectId, sessionId: string): Promise<{ message: string }> {
+  async revokeSession(userId: string, sessionId: string): Promise<{ message: string }> {
     const result = await this.userRepository.updateOne(
-      { _id: userId } as any,
+      { _id: new ObjectId(userId) } as any,
       {
         $pull: { refreshTokens: { _id: new ObjectId(sessionId) } },
       } as any,

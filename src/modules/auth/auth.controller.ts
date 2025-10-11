@@ -26,7 +26,7 @@ import {
   LogoutDto,
   ResendCodeDto,
 } from './dto/auth.dto';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 @Controller('auth')
 @UseGuards(JwtAuthGuard)

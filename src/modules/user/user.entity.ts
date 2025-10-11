@@ -54,7 +54,7 @@ export class User {
   @Column({ nullable: true, select: false })
   deleteAccountCodeExpires: Date;
 
-  @Column({ type: 'array', default: [] })
+  @Column({ default: [] })
   refreshTokens: RefreshToken[];
 
   @Column({ default: 'user' })

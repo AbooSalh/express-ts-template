@@ -6,7 +6,7 @@ export class HealthCheck {
   @ObjectIdColumn()
   _id: ObjectId;
 
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ default: () => new Date() })
   timestamp: Date;
 
   @Column()
@@ -21,7 +21,7 @@ export class HealthCheck {
   @Column({ nullable: true })
   error?: string;
 
-  @Column({ type: 'json', nullable: true })
+  @Column({ nullable: true })
   details?: Record<string, any>;
 }
 
@@ -30,7 +30,7 @@ export class DiskUsage {
   @ObjectIdColumn()
   _id: ObjectId;
 
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ default: () => new Date() })
   timestamp: Date;
 
   @Column()
@@ -57,7 +57,7 @@ export class BackupLog {
   @ObjectIdColumn()
   _id: ObjectId;
 
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ default: () => new Date() })
   timestamp: Date;
 
   @Column()
@@ -85,7 +85,7 @@ export class Alert {
   @ObjectIdColumn()
   _id: ObjectId;
 
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ default: () => new Date() })
   timestamp: Date;
 
   @Column()
@@ -106,6 +106,6 @@ export class Alert {
   @Column({ nullable: true })
   resolvedAt?: Date;
 
-  @Column({ type: 'json', nullable: true })
+  @Column({ nullable: true })
   metadata?: Record<string, any>;
 }

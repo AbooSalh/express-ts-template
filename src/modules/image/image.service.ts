@@ -75,7 +75,7 @@ export class ImageService {
   async upload(
     file: Express.Multer.File,
     metadata: any,
-    userId: ObjectId,
+    userId: string,
   ): Promise<any> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
@@ -157,6 +157,38 @@ export class ImageService {
 
     const saved = await this.imageRepository.save(image);
     return this.findOne(saved._id.toString());
+  }
+
+  async uploadMultiple(
+    files: Express.Multer.File[],
+    metadata: any,
+    userId: string,
+  ): Promise<{ images: any[]; count: number }> {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files uploaded');
+    }
+
+    const uploadPromises = files.map((file, index) => {
+      // Create individual metadata for each file if needed
+      const fileMetadata = {
+        ...metadata,
+        // You can customize metadata per file here
+        title: metadata.title ? `${metadata.title} ${index + 1}` : undefined,
+      };
+      return this.upload(file, fileMetadata, userId);
+    });
+
+    try {
+      const uploadedImages = await Promise.all(uploadPromises);
+      return {
+        images: uploadedImages,
+        count: uploadedImages.length,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to upload one or more files: ${error.message}`,
+      );
+    }
   }
 
   async update(id: string, updateImageDto: UpdateImageDto): Promise<any> {

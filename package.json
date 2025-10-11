@@ -2,9 +2,10 @@
   "name": "express-ts-template",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/main.js",
   "scripts": {
     "dev": "nest start --watch",
+    "dev:nest": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
     "start:prod": "node dist/main.js",
@@ -13,7 +14,7 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
   },
   "_moduleAliases": {
-    "@": "dist"
+    "@": "src"
   },
   "keywords": [],
   "author": "Ahmed Saleh",
@@ -26,6 +27,7 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.4.20",
+    "@nestjs/platform-fastify": "^11.1.6",
     "@nestjs/schedule": "^4.1.2",
     "@nestjs/throttler": "^5.2.0",
     "@nestjs/typeorm": "^10.0.2",
@@ -44,6 +46,7 @@
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^8.0.1",
     "express-validator": "^7.2.1",
+    "fastify": "^5.6.1",
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
     "joi": "^18.0.1",

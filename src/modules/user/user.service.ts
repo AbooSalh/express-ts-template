@@ -36,9 +36,9 @@ export class UserService {
     return user;
   }
 
-  async getProfile(userId: ObjectId): Promise<User> {
+  async getProfile(userId: string): Promise<User> {
     const user = await this.userRepository.findOne({
-      where: { _id: userId } as any,
+      where: { _id: new ObjectId(userId) } as any,
     });
 
     if (!user) {
@@ -82,9 +82,9 @@ export class UserService {
     return this.userRepository.save(user);
   }
 
-  async updateAuthUser(userId: ObjectId, updateUserDto: UpdateUserDto): Promise<User> {
+  async updateAuthUser(userId: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.userRepository.findOne({
-      where: { _id: userId } as any,
+      where: { _id: new ObjectId(userId) } as any,
     });
 
     if (!user) {
@@ -119,11 +119,11 @@ export class UserService {
   }
 
   async changePassword(
-    userId: ObjectId,
+    userId: string,
     changePasswordDto: ChangePasswordDto,
   ): Promise<{ message: string }> {
     const user = await this.userRepository.findOne({
-      where: { _id: userId } as any,
+      where: { _id: new ObjectId(userId) } as any,
       select: ['_id', 'email', 'password'],
     });
 
@@ -143,9 +143,9 @@ export class UserService {
     return { message: 'Password changed successfully' };
   }
 
-  async sendDeleteAccountCode(userId: ObjectId): Promise<{ message: string }> {
+  async sendDeleteAccountCode(userId: string): Promise<{ message: string }> {
     const user = await this.userRepository.findOne({
-      where: { _id: userId } as any,
+      where: { _id: new ObjectId(userId) } as any,
     });
 
     if (!user) {
@@ -171,7 +171,7 @@ export class UserService {
   }
 
   async deleteAccount(
-    userId: ObjectId,
+    userId: string,
     deleteAccountVerifyDto: DeleteAccountVerifyDto,
   ): Promise<{ message: string }> {
     const { code } = deleteAccountVerifyDto;
@@ -179,7 +179,7 @@ export class UserService {
 
     const user = await this.userRepository.findOne({
       where: {
-        _id: userId,
+        _id: new ObjectId(userId),
       } as any,
       select: ['_id', 'email', 'deleteAccountCode', 'deleteAccountCodeExpires'],
     });

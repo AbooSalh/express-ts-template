@@ -10,7 +10,7 @@ export class EventLog {
   refModel: string; // e.g., "Tour", "User", "Product"
 
   @Column()
-  refId: ObjectId; // The actual document ID
+  refId: string; // The actual document ID
 
   @Column()
   type: string; // e.g., "view", "click", "like"
@@ -25,12 +25,12 @@ export class EventLog {
   userAgent?: string;
 
   @Column({ nullable: true })
-  userId?: ObjectId;
+  userId?: string;
 
   @Column({ default: 1 })
   viewCount: number; // Number of views from this IP/user
 
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ default: () => new Date() })
   lastViewedAt: Date; // Last time this IP/user viewed
 
   @CreateDateColumn()

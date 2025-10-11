@@ -12,7 +12,7 @@ export interface ImageVariant {
 export interface ImageReference {
   model: string;
   field: string;
-  docId: ObjectId;
+  docId: string;
   addedAt: Date;
 }
 
@@ -43,13 +43,13 @@ export class Image {
   @Column({ nullable: true })
   folder?: string;
 
-  @Column({ type: 'array', default: [] })
+  @Column({ default: [] })
   variants: ImageVariant[];
 
   @Column({ nullable: true })
-  createdBy?: ObjectId;
+  createdBy?: string;
 
-  @Column({ type: 'array', default: [] })
+  @Column({ default: [] })
   references: ImageReference[];
 
   @Column({ nullable: true })
@@ -61,7 +61,7 @@ export class Image {
   @Column({ nullable: true })
   description?: string;
 
-  @Column({ type: 'array', default: [] })
+  @Column({ default: [] })
   tags: string[];
 
   @CreateDateColumn()
