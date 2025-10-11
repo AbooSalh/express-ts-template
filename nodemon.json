@@ -7,5 +7,5 @@
         "node_modules",
         "dist"
     ],
-    "exec": "pnpm ts-node -r tsconfig-paths/register src/server.ts"
+    "exec": "ts-node -r tsconfig-paths/register src/main.ts"
 }
