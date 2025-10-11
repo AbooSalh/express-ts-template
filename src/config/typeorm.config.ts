@@ -1,12 +1,10 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export const typeOrmConfig = (): TypeOrmModuleOptions => {
-  const config: TypeOrmModuleOptions = {
+  const config: any = {
     type: 'mongodb',
     url: process.env.DB_URL,
     database: process.env.DB_NAME,
-    useUnifiedTopology: true,
-    useNewUrlParser: true,
     synchronize: false, // Don't auto-create schema in production
     logging: process.env.NODE_ENV === 'development',
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],

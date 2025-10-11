@@ -32,7 +32,7 @@ export class EmailService {
       });
 
       this.logger.log(`Email sent successfully to ${options.to}`);
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`Email sending failed to ${options.to}`, error.stack);
       throw new Error('Failed to send email. Please try again later.');
     }

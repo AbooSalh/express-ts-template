@@ -1,7 +1,6 @@
 # Node.js dependencies
 node_modules/
 pnpm-lock.yaml
-package-lock.json
 yarn.lock
 
 # Build output
@@ -33,6 +32,9 @@ public/uploads/
 uploads/
 *.sqlite
 *.sqlite3
+
+# Backups
+backups/
 
 # IDE specific files
 .vscode/
@@ -67,3 +69,6 @@ Desktop.ini
 # Optional: ignore local scripts or tools
 scripts/local/
 tools/
+
+# Old Express files (for reference)
+.old-express-files/

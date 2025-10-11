@@ -23,7 +23,7 @@ import {
   LogoutDto,
   ResendCodeDto,
 } from './dto/auth.dto';
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'typeorm';
 
 @Injectable()
 export class AuthService {
@@ -136,7 +136,7 @@ export class AuthService {
 
     try {
       await this.emailService.sendVerificationEmail(user.email, code);
-    } catch (error) {
+    } catch (error: any) {
       if (!existingUser) {
         await this.userRepository.delete(user._id);
       }
