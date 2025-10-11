@@ -244,11 +244,11 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const accessToken = this.createAccessToken(user._id.toString());
-    const refreshToken = this.createRefreshToken(user._id.toString());
+    const accessToken = this.createAccessToken(String(user._id));
+    const refreshToken = this.createRefreshToken(String(user._id));
 
-    await this.saveRefreshToken(user._id.toString(), refreshToken, deviceInfo, ipAddress);
-    await this.cleanupExpiredTokens(user._id.toString());
+    await this.saveRefreshToken(String(user._id), refreshToken, deviceInfo, ipAddress);
+    await this.cleanupExpiredTokens(String(user._id));
 
     return { user, accessToken, refreshToken };
   }
@@ -409,10 +409,10 @@ export class AuthService {
       },
     );
 
-    const accessToken = this.createAccessToken(user._id.toString());
-    const refreshToken = this.createRefreshToken(user._id.toString());
+    const accessToken = this.createAccessToken(String(user._id));
+    const refreshToken = this.createRefreshToken(String(user._id));
 
-    await this.saveRefreshToken(user._id.toString(), refreshToken, deviceInfo, ipAddress);
+    await this.saveRefreshToken(String(user._id), refreshToken, deviceInfo, ipAddress);
 
     return { accessToken, refreshToken };
   }
@@ -429,11 +429,10 @@ export class AuthService {
         secret: this.configService.get('JWT_SECRET'),
       });
 
-      const userId = new ObjectId(decoded.id);
-      const user = await this.userModel.findOne({
-        where: { _id: userId },
-        select: ['_id', 'email', 'refreshTokens', 'emailVerified'],
-      });
+      const user = await this.userModel
+        .findById(decoded.id)
+        .select('+refreshTokens +emailVerified')
+        .exec();
 
       if (!user) {
         throw new UnauthorizedException('Invalid refresh token');
@@ -451,8 +450,8 @@ export class AuthService {
         throw new ForbiddenException('Email must be verified');
       }
 
-      const newAccessToken = this.createAccessToken(user._id.toString());
-      const newRefreshToken = this.createRefreshToken(user._id.toString());
+      const newAccessToken = this.createAccessToken(String(user._id));
+      const newRefreshToken = this.createRefreshToken(String(user._id));
 
       // Remove old token
       await this.userModel.updateOne(
@@ -463,8 +462,8 @@ export class AuthService {
       );
 
       // Add new token
-      await this.saveRefreshToken(user._id.toString(), newRefreshToken, deviceInfo, ipAddress);
-      await this.cleanupExpiredTokens(user._id.toString());
+      await this.saveRefreshToken(String(user._id), newRefreshToken, deviceInfo, ipAddress);
+      await this.cleanupExpiredTokens(String(user._id));
 
       return { accessToken: newAccessToken, refreshToken: newRefreshToken };
     } catch (error) {
@@ -480,13 +479,12 @@ export class AuthService {
         secret: this.configService.get('JWT_SECRET'),
       });
 
-      const userId = new ObjectId(decoded.id);
       await this.userModel.updateOne(
-        { _id: userId },
+        { _id: decoded.id },
         {
           $pull: { refreshTokens: { token } },
         },
-      );
+      ).exec();
     } catch (error) {
       // Even if invalid, return success to prevent token enumeration
     }
@@ -522,9 +520,9 @@ export class AuthService {
     const result = await this.userModel.updateOne(
       { _id: userId },
       {
-        $pull: { refreshTokens: { _id: new ObjectId(sessionId) } },
+        $pull: { refreshTokens: { token: sessionId } },
       },
-    );
+    ).exec();
 
     if (result.modifiedCount === 0) {
       throw new BadRequestException('Session not found');

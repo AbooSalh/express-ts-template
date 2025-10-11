@@ -35,13 +35,13 @@ export class LanguageService {
     // If setting as default, unset all others
     if (createLanguageDto.isDefault) {
       await this.languageModel.updateMany(
-        {},
-        { $set: { isDefault: false },
-      );
+        { _id: { $ne: null } },
+        { $set: { isDefault: false } },
+      ).exec();
     }
 
-    const language = this.languageModel.create(createLanguageDto);
-    return this.languageModellanguage.save();
+    const language = new this.languageModel(createLanguageDto);
+    return language.save();
   }
 
   async update(id: string, updateLanguageDto: UpdateLanguageDto): Promise<Language> {
@@ -50,17 +50,17 @@ export class LanguageService {
     // If setting as default, unset all others
     if (updateLanguageDto.isDefault) {
       await this.languageModel.updateMany(
-        { _id: { $ne: id },
-        { $set: { isDefault: false },
-      );
+        { _id: { $ne: id } },
+        { $set: { isDefault: false } },
+      ).exec();
     }
 
     Object.assign(language, updateLanguageDto);
-    return this.languageModellanguage.save();
+    return language.save();
   }
 
   async delete(id: string): Promise<{ message: string }> {
-    const result = await this.languageModel.deleteOne({ _id: id).;
+    const result = await this.languageModel.deleteOne({ _id: id }).exec();
 
     if (result.deletedCount === 0) {
       throw new NotFoundException('Language not found');

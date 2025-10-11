@@ -16,7 +16,7 @@ import sharp from 'sharp';
 @Injectable()
 export class ImageService {
   constructor(
-    @InjectModel(Image)
+    @InjectModel(Image.name)
     private imageModel: Model<Image>,
     private configService: ConfigService,
   ) {}
@@ -30,18 +30,13 @@ export class ImageService {
     if (query.folder) filter.folder = query.folder;
 
     const [images, total] = await Promise.all([
-      this.imageModel.find({
-        where: filter,
-        skip,
-        take: limit,
-        order: { createdAt: 'DESC' },
-      }),
-      this.imageModel.count(filter),
+      this.imageModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
+      this.imageModel.countDocuments(filter).exec(),
     ]);
 
     const baseUrl = this.configService.get('BASE_URL', 'http://localhost:5050');
     const imagesWithUrls = images.map((img) => ({
-      ...img,
+      ...img.toObject(),
       url: `${baseUrl}/uploads/${img.folder ? img.folder + '/' : ''}${img.fileName}`,
       variants: img.variants.map((v) => ({
         ...v,

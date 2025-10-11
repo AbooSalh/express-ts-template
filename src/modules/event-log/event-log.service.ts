@@ -7,7 +7,7 @@ import { ObjectId } from 'mongodb';
 @Injectable()
 export class EventLogService {
   constructor(
-    @InjectModel(EventLog)
+    @InjectModel(EventLog.name)
     private eventLogModel: Model<EventLog>,
   ) {}
 
@@ -20,16 +20,11 @@ export class EventLogService {
     const filter: any = {};
     if (query.refModel) filter.refModel = query.refModel;
     if (query.type) filter.type = query.type;
-    if (query.refId) filter.refId = new ObjectId(query.refId);
+    if (query.refId) filter.refId = query.refId;
 
     const [events, total] = await Promise.all([
-      this.eventLogModel.find({
-        where: filter,
-        skip,
-        take: limit,
-        order: { createdAt: 'DESC' },
-      }),
-      this.eventLogModel.count(filter),
+      this.eventLogModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
+      this.eventLogModel.countDocuments(filter).exec(),
     ]);
 
     return {
@@ -90,7 +85,7 @@ export class EventLogService {
           avgViewsPerIP: { $round: ['$avgViewsPerIP', 2] },
         },
       },
-    ]).toArray();
+    ]).exec();
 
     return { analytics };
   }

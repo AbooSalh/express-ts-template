@@ -64,7 +64,7 @@ export class UserService {
     if (updateUserDto.email && updateUserDto.email !== user.email) {
       const existingUser = await this.userModel.findOne({ email: updateUserDto.email }).exec();
 
-      if (existingUser && existingUser._id.toString() !== id) {
+      if (existingUser && String(existingUser._id) !== id) {
         throw new BadRequestException('Email already exists');
       }
     }
@@ -86,7 +86,7 @@ export class UserService {
     if (updateUserDto.email && updateUserDto.email !== user.email) {
       const existingUser = await this.userModel.findOne({ email: updateUserDto.email }).exec();
 
-      if (existingUser && existingUser._id.toString() !== userId.toString()) {
+      if (existingUser && String(existingUser._id) !== userId.toString()) {
         throw new BadRequestException('Email already exists');
       }
     }
